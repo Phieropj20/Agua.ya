@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agua Ya - Pedidos Repartidor</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #e3f2fd;
+    color: #0d47a1;
+    padding: 15px;
+  }
+  header {
+    background-color: #1565c0;
+    color: white;
+    padding: 15px 10px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  header img {
+    width: 28px;
+    height: 28px;
+    margin-right: 10px;
+  }
+  .container {
+    max-width: 600px;
+    margin: 20px auto 0;
+    background: white;
+    border-radius: 10px;
+    padding: 15px 20px;
+    box-shadow: 0 0 12px #90caf9aa;
+  }
+  .pedido {
+    border: 1.5px solid #90caf9;
+    background: #bbdefb;
+    border-radius: 7px;
+    margin-bottom: 15px;
+    padding: 12px 15px;
+  }
+  .pedido.entregado {
+    background: #c8e6c9;
+    text-decoration: line-through;
+    color: #2e7d32;
+  }
+  .pedido p {
+    margin: 5px 0;
+    font-weight: 600;
+  }
+  .pedido button {
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    border: none;
+    width: 100%;
+    background-color: #0d47a1;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+  }
+  .pedido button:hover {
+    background-color: #1565c0;
+  }
+  .btn-volver {
+    margin: 25px auto 0;
+    display: block;
+    max-width: 600px;
+    background-color: #1976d2;
+    color: white;
+    font-weight: bold;
+    padding: 12px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+  }
+  .btn-volver:hover {
+    background-color: #0d47a1;
+  }
+  @media (max-width: 480px) {
+    body, .container {
+      padding: 10px;
+    }
+    .pedido p {
+      font-size: 0.9rem;
+    }
+    .pedido button, .btn-volver {
+      font-size: 1rem;
+      padding: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="https://cdn-icons-png.flaticon.com/512/2933/2933601.png" alt="Icono Agua" />
+  Agua Ya - Pedidos Repartidor
+</header>
+
+<div class="container">
+  <div id="listaPedidos"></div>
+</div>
+
+<button class="btn-volver" id="btnVolver">← Volver a pedido</button>
+
+<script>
+  // Sonido para notificación
+  const sonidoNotificacion = new Audio('https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg');
+
+  let pedidos = JSON.parse(localStorage.getItem('pedidos') || '[]');
+  let pedidosPrevios = JSON.parse(localStorage.getItem('pedidos_previos') || '[]');
+
+  const listaPedidos = document.getElementById('listaPedidos');
+  const btnVolver = document.getElementById('btnVolver');
+
+  // Función para renderizar pedidos
+  function renderPedidos() {
+    listaPedidos.innerHTML = '';
+
+    if(pedidos.length === 0) {
+      listaPedidos.innerHTML = '<p>No hay pedidos disponibles.</p>';
+      return;
+    }
+
+    pedidos.forEach(pedido => {
+      const div = document.createElement('div');
+      div.className = 'pedido' + (pedido.entregado ? ' entregado' : '');
+      div.innerHTML = `
+        <p><strong>Cliente:</strong> ${pedido.nombre}</p>
+        <p><strong>Dirección:</strong> ${pedido.direccion}</p>
+        <p><strong>Cantidad:</strong> ${pedido.cantidad}</p>
+        ${!pedido.entregado ? `<button onclick="marcarEntregado(${pedido.id})">Marcar como entregado</button>` : '<p>Entregado</p>'}
+      `;
+      listaPedidos.appendChild(div);
+    });
+  }
+
+  // Marcar pedido entregado
+  function marcarEntregado(id) {
+    pedidos = pedidos.map(p => p.id === id ? {...p, entregado: true} : p);
+    localStorage.setItem('pedidos', JSON.stringify(pedidos));
+    localStorage.setItem('pedidos_previos', JSON.stringify(pedidos)); // Actualizamos también previos
+    renderPedidos();
+  }
+
+  renderPedidos();
+
+  // Función para detectar nuevos pedidos y reproducir sonido
+  function detectarNuevosPedidos() {
+    let pedidosActuales = JSON.parse(localStorage.getItem('pedidos') || '[]');
+    let pedidosPrev = JSON.parse(localStorage.getItem('pedidos_previos') || '[]');
+
+    if(pedidosActuales.length > pedidosPrev.length) {
+      sonidoNotificacion.play();
+    }
+
+    // Actualizar pedidosPrevios en localStorage
+    localStorage.setItem('pedidos_previos', JSON.stringify(pedidosActuales));
+    pedidos = pedidosActuales;
+    renderPedidos();
+  }
+
+  // Revisar nuevos pedidos cada 5 segundos
+  setInterval(detectarNuevosPedidos, 5000);
+
+  // Botón volver a página principal
+  btnVolver.addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+
+</script>
+</body>
+</html>
